@@ -1,17 +1,229 @@
 <?php
 /*
 Plugin Name: Simple Connect Plugin
-Description: WooCommerce admin activation + frontend Connect UI with WooCommerce REST API key creation and Svelta credential exchange (2-step GUID flow). Clean, simple Svelta-inspired design.
-Version: 15.0
+Description: WooCommerce admin activation + frontend Connect UI that opens Svelta Start URL (with dynamic store_url) and creates/updates a single WooCommerce webhook using the API key + callback URL returned by Svelta. Clean, simple Svelta-inspired design.
+Version: 22.1
 Author: Railijs Didzis Grieznis
 */
 
-if (!defined('ABSPATH')) exit;
+if (! defined('ABSPATH')) exit;
 
 /* ---------------------------------------------------
- * AUTH URL VARIABLE (boss requested, not used yet)
+ * CONSTANTS / OPTIONS
  * ---------------------------------------------------*/
-$SVELTA_AUTH_URL = "https://dev-rgqqxqhvtdhub1ou.us.auth0.com/u/login?client_id=Ekpx91BKIfP3bjzRHf3NtSMEylfABcJi";
+
+// Name used for the WooCommerce webhook
+if (! defined('SVELTA_WEBHOOK_NAME')) {
+    define('SVELTA_WEBHOOK_NAME', 'Svelta Webhook');
+}
+
+// Options where we store Svelta callback data
+if (! defined('SVELTA_OPTION_API_KEY')) {
+    define('SVELTA_OPTION_API_KEY', 'svelta_api_key');
+}
+if (! defined('SVELTA_OPTION_CALLBACK_URL')) {
+    define('SVELTA_OPTION_CALLBACK_URL', 'svelta_callback_url');
+}
+if (! defined('SVELTA_OPTION_WEBHOOK_ID')) {
+    define('SVELTA_OPTION_WEBHOOK_ID', 'svelta_webhook_id');
+}
+if (! defined('SVELTA_OPTION_WEBHOOK_LAST_ERROR')) {
+    define('SVELTA_OPTION_WEBHOOK_LAST_ERROR', 'svelta_webhook_last_error');
+}
+
+/* ---------------------------------------------------
+ * SVELTA START ENDPOINT (dynamic store_url)
+ * ---------------------------------------------------*/
+
+if (! defined('SVELTA_START_BASE_URL')) {
+    // Svelta "Start" endpoint – we append ?store_url=<host>
+    define(
+        'SVELTA_START_BASE_URL',
+        'https://staging.clientapi.sveltacourier.com/api/WooCommerceAuth/Start?store_url='
+    );
+}
+
+/**
+ * Get the store host that we send to Svelta as store_url.
+ * e.g. http://localhost/wp  -> localhost
+ *      https://shop.example.com -> shop.example.com
+ */
+function simple_connect_get_store_host()
+{
+    $full_url = home_url();
+    $host     = parse_url($full_url, PHP_URL_HOST);
+
+    if (empty($host)) {
+        $host = $full_url;
+    }
+
+    return $host;
+}
+
+/**
+ * Build the Svelta Start URL with the real store host.
+ */
+function simple_connect_get_svelta_start_url()
+{
+    $host = simple_connect_get_store_host();
+    return SVELTA_START_BASE_URL . rawurlencode($host);
+}
+
+/* ---------------------------------------------------
+ * WOO HELPERS: ENSURE WEBHOOK
+ * ---------------------------------------------------*/
+
+/**
+ * Load WooCommerce webhook classes/functions if needed.
+ *
+ * This version:
+ * - Does NOT try to manually include woocommerce.php.
+ * - Uses WC_ABSPATH / WC()->plugin_path() which are the official Woo paths.
+ */
+function simple_connect_load_wc_webhook_bits()
+{
+    // If already loaded, nothing to do.
+    if (class_exists('WC_Webhook') && function_exists('wc_get_webhooks')) {
+        return true;
+    }
+
+    // WooCommerce must be active.
+    if (defined('WC_ABSPATH')) {
+        $wc_base = trailingslashit(WC_ABSPATH);
+    } elseif (function_exists('WC') && WC()) {
+        // Fallback: use the plugin path from the WC instance.
+        if (method_exists(WC(), 'plugin_path')) {
+            $wc_base = trailingslashit(WC()->plugin_path());
+        } else {
+            return false;
+        }
+    } else {
+        // WooCommerce not active / not loaded.
+        return false;
+    }
+
+    // Webhook class.
+    if (! class_exists('WC_Webhook')) {
+        $class_file = $wc_base . 'includes/class-wc-webhook.php';
+        if (file_exists($class_file)) {
+            include_once $class_file;
+        }
+    }
+
+    // Webhook helper functions (wc_get_webhooks).
+    if (! function_exists('wc_get_webhooks')) {
+        $func_file = $wc_base . 'includes/wc-webhook-functions.php';
+        if (file_exists($func_file)) {
+            include_once $func_file;
+        }
+    }
+
+    return class_exists('WC_Webhook') && function_exists('wc_get_webhooks');
+}
+
+/**
+ * Create or update the Svelta webhook based on API key + callback URL.
+ * - delivery_url = callback_url (from Svelta)
+ * - secret       = api_key      (from Svelta)
+ * - topic        = order.created
+ *
+ * Returns true on success, false on failure.
+ * On failure, $error_msg (if passed) will contain a message.
+ */
+function simple_connect_ensure_webhook($api_key, $callback_url, &$error_msg = null)
+{
+    $error_msg = '';
+
+    if (empty($callback_url)) {
+        $error_msg = 'Callback URL is empty.';
+        return false;
+    }
+
+    if (! simple_connect_load_wc_webhook_bits()) {
+        $error_msg = 'WooCommerce webhook classes/functions are not available.';
+        return false;
+    }
+
+    $delivery_url      = $callback_url;
+    $saved_webhook_id  = (int) get_option(SVELTA_OPTION_WEBHOOK_ID);
+    $webhook           = null;
+
+    // 1) Try to load existing webhook by saved ID.
+    if ($saved_webhook_id > 0) {
+        if (function_exists('wc_get_webhook')) {
+            $maybe = wc_get_webhook($saved_webhook_id);
+        } else {
+            $maybe = new WC_Webhook($saved_webhook_id);
+        }
+
+        if ($maybe && $maybe->get_id()) {
+            $webhook = $maybe;
+        }
+    }
+
+    // 2) If not found, try by Delivery URL (so we don't create duplicates).
+    if (! $webhook) {
+        $all = wc_get_webhooks();
+        if (is_array($all)) {
+            foreach ($all as $wh) {
+                /** @var WC_Webhook $wh */
+                if (! $wh instanceof WC_Webhook) {
+                    continue;
+                }
+
+                if (rtrim($wh->get_delivery_url(), '/') === rtrim($delivery_url, '/')) {
+                    $webhook = $wh;
+                    break;
+                }
+            }
+        }
+    }
+
+    // 3) Create a new webhook if still none.
+    if (! $webhook) {
+        $webhook = new WC_Webhook();
+        $webhook->set_name(SVELTA_WEBHOOK_NAME . ' (order.created)');
+    }
+
+    // 4) Configure webhook fields.
+    $webhook->set_status('active');
+    $webhook->set_topic('order.created');
+    $webhook->set_delivery_url($delivery_url);
+
+    if (! empty($api_key)) {
+        $webhook->set_secret($api_key);
+    }
+
+    // Use API v3.
+    if (method_exists($webhook, 'set_api_version')) {
+        $webhook->set_api_version(3);
+    }
+
+    // 5) Save.
+    $saved_id = $webhook->save();
+
+    if (! $saved_id) {
+        $error_msg = 'Webhook save returned no ID.';
+        return false;
+    }
+
+    // Remember ID for next time.
+    update_option(SVELTA_OPTION_WEBHOOK_ID, (int) $saved_id);
+
+    return true;
+}
+
+/**
+ * Simple "connected?" check for the UI:
+ * we only require that we have an API key and callback URL saved.
+ */
+function simple_connect_has_svelta_connection()
+{
+    $api_key      = get_option(SVELTA_OPTION_API_KEY);
+    $callback_url = get_option(SVELTA_OPTION_CALLBACK_URL);
+
+    return ! empty($api_key) && ! empty($callback_url);
+}
 
 /* ---------------------------------------------------
  * ADMIN MENU
@@ -31,25 +243,45 @@ add_action('admin_menu', function () {
  * ADMIN PAGE
  * ---------------------------------------------------*/
 function simple_connect_admin_page()
-{ ?>
+{
+    // Handle callback from Svelta: ?api_key=...&callback_url=...
+    if (isset($_GET['api_key'], $_GET['callback_url'])) {
+        $callback_api_key = sanitize_text_field(wp_unslash($_GET['api_key']));
+        $callback_url     = esc_url_raw(wp_unslash($_GET['callback_url']));
+
+        // Save in options so we can show them and use them later.
+        update_option(SVELTA_OPTION_API_KEY, $callback_api_key);
+        update_option(SVELTA_OPTION_CALLBACK_URL, $callback_url);
+
+        // Create / update webhook based on these values.
+        $error = '';
+        $ok    = simple_connect_ensure_webhook($callback_api_key, $callback_url, $error);
+        update_option(SVELTA_OPTION_WEBHOOK_LAST_ERROR, $ok ? '' : $error);
+    }
+
+?>
     <div class="wrap">
         <h1>API Connect</h1>
-        <p>Enable or disable the Svelta connection system on the frontend.</p>
+        <p>Enable or disable the Svelta connection and preview the Connect UI.</p>
+
         <hr>
         <?php simple_connect_admin_ui(); ?>
 
         <hr style="margin:40px 0;">
         <h2>Admin Test Area</h2>
-        <p>This simulates the frontend Connect UI.</p>
         <?php simple_connect_frontend_ui(true); ?>
     </div>
-<?php }
+<?php
+}
 
 /* ---------------------------------------------------
  * FRONTEND (SHOW ON HOMEPAGE)
  * ---------------------------------------------------*/
 add_filter('the_content', function ($content) {
-    if (!is_front_page() && !is_home()) return $content;
+    if (! is_front_page() && ! is_home()) {
+        return $content;
+    }
+
     ob_start();
     simple_connect_frontend_ui(false);
     return $content . ob_get_clean();
@@ -63,119 +295,188 @@ function simple_connect_styles()
     <style>
         :root {
             --sv-purple: #7A4BFF;
+            --sv-purple-dark: #6539d6;
             --sv-teal: #15d7c6;
             --sv-gray-200: #e5e7eb;
+            --sv-gray-100: #f3f4f6;
             --sv-gray-50: #fafafa;
-            --sv-gray-900: #1f2937;
+            --sv-gray-900: #111827;
             --sv-gray-700: #4b5563;
+            --sv-gray-500: #6b7280;
         }
 
         .sc-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             padding: 12px 24px;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
-            border-radius: 10px;
+            border-radius: 999px;
             border: none;
             color: #fff;
             cursor: pointer;
-            transition: .2s ease;
+            transition:
+                background .15s ease,
+                transform .1s ease,
+                box-shadow .1s ease,
+                opacity .15s ease;
             font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--sv-purple);
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
         }
 
         .sc-btn:hover {
-            opacity: .9;
+            background: var(--sv-purple-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.16);
         }
 
-        .sc-btn-purple {
-            background: var(--sv-purple);
+        .sc-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 8px rgba(15, 23, 42, 0.16);
+        }
+
+        .sc-btn:disabled {
+            opacity: 0.75;
+            cursor: default;
+            transform: none;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.1);
         }
 
         .sc-btn-teal {
             background: var(--sv-teal);
         }
 
+        .sc-btn-teal:hover {
+            background: #0f9f93;
+        }
+
         .sc-btn-red {
             background: #ef4444;
         }
 
-        .sc-btn-ghost {
-            background: transparent;
-            color: var(--sv-purple);
-            border: 1px solid var(--sv-purple);
+        .sc-btn-red:hover {
+            background: #b91c1c;
         }
 
         .sc-connect-area {
-            margin: 30px auto;
+            margin: 40px auto;
             text-align: center;
-            max-width: 600px;
+            max-width: 520px;
         }
 
         .sc-card {
-            background: var(--sv-gray-50);
-            padding: 32px 28px;
-            border-radius: 16px;
-            border: 1px solid var(--sv-gray-200);
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+            background: #fff;
+            padding: 22px 22px 20px;
+            border-radius: 18px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.07);
         }
 
         .sc-logo {
-            width: 70%;
-            margin: 0 auto 18px auto;
+            width: 60%;
+            margin: 0 auto 10px auto;
             display: block;
         }
 
         .sc-title {
-            font-size: 24px;
+            font-size: 18px;
             font-weight: 700;
-            margin-bottom: 10px;
+            margin-bottom: 4px;
             color: var(--sv-gray-900);
         }
 
+        .sc-subtitle {
+            font-size: 12px;
+            color: var(--sv-gray-500);
+            margin-bottom: 16px;
+        }
+
         .sc-desc {
-            font-size: 14px;
+            font-size: 13px;
             color: var(--sv-gray-700);
+            margin-bottom: 12px;
+            text-align: left;
+        }
+
+        .sc-store-url {
+            font-size: 11px;
+            color: var(--sv-gray-500);
             margin-bottom: 18px;
+            text-align: left;
+        }
+
+        .sc-store-url code {
+            font-size: 11px;
+            background: var(--sv-gray-50);
+            padding: 2px 6px;
+            border-radius: 999px;
+            border: 1px solid var(--sv-gray-200);
         }
 
         .sc-error {
-            padding: 12px;
-            background: #fee2e2;
+            padding: 10px 12px;
+            background: #fef2f2;
             border: 1px solid #fecaca;
             color: #b91c1c;
-            border-radius: 8px;
+            border-radius: 10px;
+            font-size: 13px;
+            text-align: left;
         }
 
         .sc-admin-card {
             background: #fff;
-            padding: 28px;
-            border-radius: 12px;
-            border: 1px solid var(--sv-gray-200);
-            max-width: 600px;
+            padding: 18px 20px;
+            border-radius: 16px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            max-width: 480px;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+        }
+
+        .sc-admin-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .sc-admin-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--sv-gray-900);
         }
 
         .sc-status-badge {
-            margin: 10px 0;
-            padding: 10px 16px;
-            border-radius: 20px;
+            padding: 5px 10px;
+            border-radius: 999px;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             font-weight: 600;
+            font-size: 11px;
             border: 1px solid var(--sv-gray-200);
         }
 
         .sc-status-dot {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
         }
 
         .sc-status-active {
             background: #dcfce7;
+            color: #047857;
+            border-color: #a7f3d0;
         }
 
         .sc-status-inactive {
-            background: var(--sv-gray-50);
+            background: var(--sv-gray-100);
+            color: #4b5563;
+            border-color: var(--sv-gray-200);
         }
 
         .sc-status-active .sc-status-dot {
@@ -187,101 +488,61 @@ function simple_connect_styles()
         }
 
         .sc-result-box {
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            padding: 18px;
+            background: var(--sv-gray-50);
+            border: 1px solid var(--sv-gray-200);
+            padding: 14px 12px;
             border-radius: 12px;
             text-align: left;
+            font-size: 13px;
         }
 
         .sc-result-code {
             display: block;
-            padding: 8px;
+            padding: 6px 8px;
             background: #fff;
-            border-radius: 6px;
-            border: 1px solid #ddd;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
             margin-top: 4px;
             overflow-wrap: anywhere;
-        }
-
-        .sc-svelta-response {
-            background: #f3faf8;
-            border: 1px solid #cce7df;
-            padding: 16px;
-            border-radius: 12px;
-            margin-top: 12px;
-            text-align: left;
-        }
-
-        .sc-svelta-response-title {
-            font-size: 16px;
-            color: #0f5132;
-            font-weight: 600;
-        }
-
-        .sc-svelta-response-list {
-            margin-top: 10px;
-            padding-left: 18px;
-            color: #084c33;
-            font-size: 14px;
-        }
-
-        .sc-input {
-            width: 100%;
-            max-width: 100%;
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid var(--sv-gray-200);
-            font-size: 14px;
-            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-            box-sizing: border-box;
-        }
-
-        .sc-input:focus {
-            outline: none;
-            border-color: var(--sv-purple);
-            box-shadow: 0 0 0 2px rgba(122, 75, 255, 0.15);
-            background: #fff;
-        }
-
-        .sc-input-label {
-            text-align: left;
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--sv-gray-700);
-            margin-bottom: 4px;
-        }
-
-        .sc-input-help {
-            text-align: left;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
             font-size: 12px;
-            color: var(--sv-gray-700);
-            margin-top: 4px;
         }
 
-        .sc-actions-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: center;
-            margin-top: 16px;
+        .sc-disconnect-wrap {
+            margin-top: 12px;
+            text-align: right;
         }
 
-        @media (max-width: 480px) {
-            .sc-actions-row {
-                flex-direction: column;
-                align-items: stretch;
-            }
+        .sc-disconnect-btn {
+            background: transparent;
+            border: none;
+            padding: 0;
+            font-size: 12px;
+            color: #b91c1c;
+            cursor: pointer;
+            text-decoration: underline;
+        }
 
-            .sc-actions-row .sc-btn {
-                width: 100%;
-            }
+        .sc-disconnect-btn:disabled {
+            opacity: 0.7;
+            cursor: default;
+            text-decoration: none;
+        }
+
+        .sc-webhook-note {
+            margin-top: 6px;
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        .sc-webhook-note-error {
+            color: #b91c1c;
         }
     </style>
 <?php }
 
 /* ---------------------------------------------------
- * ADMIN UI
+ * ADMIN UI BOX
  * ---------------------------------------------------*/
 function simple_connect_admin_ui()
 {
@@ -289,18 +550,27 @@ function simple_connect_admin_ui()
     simple_connect_styles(); ?>
 
     <div class="sc-admin-card">
-        <h2>Connection System Control</h2>
-
-        <div class="sc-status-badge <?php echo $is_active ? 'sc-status-active' : 'sc-status-inactive'; ?>">
-            <span class="sc-status-dot"></span>
-            <span><?php echo $is_active ? 'Active' : 'Inactive'; ?></span>
+        <div class="sc-admin-header">
+            <div class="sc-admin-title">Svelta Connection</div>
+            <div class="sc-status-badge <?php echo $is_active ? 'sc-status-active' : 'sc-status-inactive'; ?>">
+                <span class="sc-status-dot"></span>
+                <span><?php echo $is_active ? 'Active' : 'Inactive'; ?></span>
+            </div>
         </div>
 
-        <div style="margin-top:20px;">
-            <?php if (!$is_active): ?>
-                <button class="sc-btn sc-btn-teal" onclick="toggleSC('activate')">Activate</button>
-            <?php else: ?>
-                <button class="sc-btn sc-btn-red" onclick="toggleSC('deactivate')">Deactivate</button>
+        <p style="margin:0 0 12px; font-size:12px; color:var(--sv-gray-600);">
+            When active, shop owners can connect their store so new orders are sent to Svelta automatically.
+        </p>
+
+        <div>
+            <?php if (! $is_active) : ?>
+                <button class="sc-btn sc-btn-teal" onclick="toggleSC('activate')">
+                    Activate
+                </button>
+            <?php else : ?>
+                <button class="sc-btn sc-btn-red" onclick="toggleSC('deactivate')">
+                    Deactivate
+                </button>
             <?php endif; ?>
         </div>
     </div>
@@ -320,182 +590,136 @@ function simple_connect_admin_ui()
 <?php }
 
 /* ---------------------------------------------------
- * FRONTEND CONNECT UI (2-step GUID flow)
- *
- * Step 1: "Open Svelta Connection" → user logs in on Svelta side + sees GUID.
- * Step 2: User pastes GUID into field → click "Finish Connection".
- *         Plugin creates WC API key + sends GUID & secret to Svelta.
+ * FRONTEND / ADMIN CONNECT CARD
  * ---------------------------------------------------*/
 function simple_connect_frontend_ui($is_admin_test = false)
 {
     $is_active = get_option('simple_connect_active', false);
-    $nonce     = wp_create_nonce('simple_connect_nonce');
 
-    // Store host for Start URL
-    $store_url  = home_url();
-    $store_host = parse_url($store_url, PHP_URL_HOST) ?: $store_url;
-    $svelta_start_url = 'https://staging.clientapi.sveltacourier.com/api/WooCommerceAuth/Start?store_url='
-        . rawurlencode($store_host);
+    $auth_url   = simple_connect_get_svelta_start_url();
+    $store_host = simple_connect_get_store_host();
+
+    $existing_callback = get_option(SVELTA_OPTION_CALLBACK_URL);
+    $webhook_error     = get_option(SVELTA_OPTION_WEBHOOK_LAST_ERROR);
+
+    // Saved connection (from previous callback).
+    $has_saved_connection = simple_connect_has_svelta_connection();
+
+    // Just returned from Svelta in THIS request?
+    $just_connected = isset($_GET['api_key'], $_GET['callback_url']);
+
+    // What callback URL should we display?
+    if ($just_connected) {
+        $display_callback = esc_url_raw(wp_unslash($_GET['callback_url']));
+    } else {
+        $display_callback = $existing_callback;
+    }
+
+    // For UI: connected if we *either* just came back, or have saved values.
+    $show_connected_box = ($just_connected || $has_saved_connection) && ! empty($display_callback);
 
     simple_connect_styles(); ?>
 
     <div class="sc-connect-area">
 
-        <?php if (!$is_active && !$is_admin_test): ?>
-            <div class="sc-error">Connection system is inactive. Please contact admin.</div>
-        <?php else: ?>
+        <?php if (! $is_active && ! $is_admin_test) : ?>
+            <div class="sc-error">
+                Svelta connection is currently disabled. Please contact the shop admin.
+            </div>
+        <?php else : ?>
 
             <div class="sc-card">
 
-                <img class="sc-logo" src="https://www.svelta.io/wp-content/uploads/2024/08/Svelta-ltd-01-1024x301.png" alt="Svelta logo">
+                <img class="sc-logo"
+                    src="https://www.svelta.io/wp-content/uploads/2024/08/Svelta-ltd-01-1024x301.png"
+                    alt="Svelta logo">
 
                 <div class="sc-title">Connect to Svelta</div>
+                <div class="sc-subtitle">Send new WooCommerce orders automatically to Svelta</div>
 
-                <div class="sc-desc">
-                    Step 1: Open Svelta in a new tab and log in.<br>
-                    Step 2: Copy the GUID shown by Svelta and paste it below.<br>
-                    Step 3: Click "Finish Connection" to create a WooCommerce API key and send it to Svelta.
+                <p class="sc-desc">
+                    Click Connect to go to Svelta and link this store. Once connected,
+                    new orders will be sent to Svelta automatically.
+                </p>
+
+                <p class="sc-store-url">
+                    Store URL being sent to Svelta:
+                    <code><?php echo esc_html($store_host); ?></code>
+                </p>
+
+                <button class="sc-btn"
+                    type="button"
+                    onclick="window.location.href='<?php echo esc_url($auth_url); ?>'">
+                    <span class="sc-btn-label">
+                        <?php echo $show_connected_box ? 'Reconnect to Svelta' : 'Connect to Svelta'; ?>
+                    </span>
+                </button>
+
+                <div class="sc-connect-status" style="margin-top:16px; font-size:13px; color:#4b5563;">
+
+                    <?php if ($show_connected_box && $display_callback) : ?>
+                        <div class="sc-result-box">
+                            <strong>Your store is now connected to Svelta.</strong><br><br>
+                            <span>Orders from this store will be sent to:</span>
+                            <code class="sc-result-code">
+                                <?php echo esc_html($display_callback); ?>
+                            </code>
+
+                            <?php if ($is_admin_test) : ?>
+                                <?php if (! empty($webhook_error)) : ?>
+                                    <div class="sc-webhook-note sc-webhook-note-error">
+                                        Webhook error: <?php echo esc_html($webhook_error); ?>
+                                    </div>
+                                <?php else : ?>
+                                    <div class="sc-webhook-note">
+                                        Webhook for <code>order.created</code> has been created or updated
+                                        in WooCommerce → Settings → Advanced → Webhooks.
+                                    </div>
+                                <?php endif; ?>
+
+                                <div class="sc-disconnect-wrap">
+                                    <button type="button"
+                                        class="sc-disconnect-btn sc-disconnect-btn-js">
+                                        Disconnect from Svelta
+                                    </button>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+
                 </div>
-
-                <div class="sc-actions-row">
-                    <a class="sc-btn sc-btn-ghost"
-                        href="<?php echo esc_url($svelta_start_url); ?>"
-                        target="_blank" rel="noopener noreferrer">
-                        Open Svelta Connection
-                    </a>
-
-                    <button class="sc-btn sc-btn-purple sc-connect-btn" type="button">
-                        Finish Connection
-                    </button>
-                </div>
-
-                <div style="margin-top:18px; text-align:left;">
-                    <div class="sc-input-label">Svelta GUID</div>
-                    <input type="text" class="sc-input sc-guid-input" placeholder="Paste GUID from Svelta here">
-                    <div class="sc-input-help">
-                        After logging in on Svelta, they will show you a GUID for this store. Paste it exactly as shown.
-                    </div>
-                </div>
-
-                <div class="sc-connect-status" style="margin-top:16px; font-size:14px; color:#4b5563;"></div>
 
             </div>
 
-            <script>
-                (function($) {
-                    $(document).ready(function() {
+            <?php if ($is_admin_test) : ?>
+                <script>
+                    (function($) {
+                        $(document).ready(function() {
+                            $('.sc-disconnect-btn-js').on('click', function(e) {
+                                e.preventDefault();
+                                var btn = $(this);
+                                if (!confirm('Disconnect this store from Svelta?')) return;
 
-                        const btn = $('.sc-connect-btn');
-                        const guidEl = $('.sc-guid-input');
-                        const status = $('.sc-connect-status');
-
-                        // Minimal pretty formatter for Svelta JSON response (Option A)
-                        function formatSveltaResponse(obj) {
-                            if (!obj || typeof obj !== 'object') {
-                                return '';
-                            }
-
-                            let html = `
-                                <div class="sc-svelta-response">
-                                    <div class="sc-svelta-response-title">Svelta Response</div>
-                                    <ul class="sc-svelta-response-list">
-                            `;
-
-                            for (const key in obj) {
-                                if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
-                                let label = key.replace(/_/g, ' ');
-                                label = label.charAt(0).toUpperCase() + label.slice(1);
-                                html += `<li><strong>${label}:</strong> ${obj[key]}</li>`;
-                            }
-
-                            html += `
-                                    </ul>
-                                </div>
-                            `;
-
-                            return html;
-                        }
-
-                        btn.on('click', function() {
-
-                            const guid = (guidEl.val() || '').trim();
-
-                            if (!guid) {
-                                status.html('<div class="sc-error">Please paste the Svelta GUID before finishing the connection.</div>');
-                                guidEl.focus();
-                                return;
-                            }
-
-                            btn.prop('disabled', true).text('Connecting...');
-                            status.text('Creating WooCommerce API key and sending credentials to Svelta...');
-
-                            $.post('<?php echo admin_url("admin-ajax.php"); ?>', {
-                                action: 'svelta_finish_connect',
-                                nonce: '<?php echo $nonce; ?>',
-                                svelta_guid: guid
-                            }, function(response) {
-
-                                if (response && response.success) {
-
-                                    const wc = response.data.wc;
-                                    const svelta = response.data.svelta;
-                                    const prettySvelta = formatSveltaResponse(svelta.response || {});
-
-                                    status.html(`
-                                        <div class="sc-result-box">
-                                            <strong style="font-size:16px;">Connection Successful</strong><br><br>
-
-                                            <strong>Store URL:</strong>
-                                            <span style="display:block; margin-top:4px;">${svelta.store_url}</span><br>
-
-                                            <strong>Svelta GUID:</strong>
-                                            <code class="sc-result-code">
-                                                ${svelta.client_guid}
-                                            </code><br>
-
-                                            <strong>WooCommerce API Key (created):</strong><br>
-                                            <span style="font-size:13px; color:#6b7280;">Permissions: read_write</span><br><br>
-
-                                            <strong>Consumer Key:</strong>
-                                            <code class="sc-result-code">
-                                                ${wc.consumer_key}
-                                            </code><br>
-
-                                            <strong>Consumer Secret:</strong>
-                                            <code class="sc-result-code">
-                                                ${wc.consumer_secret}
-                                            </code><br><br>
-
-                                            <strong>Sent to Svelta as:</strong><br>
-                                            <span style="font-size:13px; color:#6b7280;">
-                                                client_id = Svelta GUID<br>
-                                                client_secret = WooCommerce Consumer Secret
-                                            </span>
-                                            ${prettySvelta}
-                                        </div>
-                                    `);
-
-                                    btn.text('Connected to Svelta').css('opacity', '0.7');
-
-                                } else {
-                                    let msg = 'Failed to connect.';
-                                    if (response && response.data && response.data.message) {
-                                        msg += ' ' + response.data.message;
+                                btn.prop('disabled', true).text('Disconnecting...');
+                                $.post(ajaxurl, {
+                                    action: 'svelta_disconnect',
+                                    nonce: '<?php echo wp_create_nonce("simple_connect_nonce"); ?>'
+                                }, function(resp) {
+                                    if (resp && resp.success) {
+                                        location.reload();
+                                    } else {
+                                        alert('Failed to disconnect from Svelta.');
+                                        btn.prop('disabled', false).text('Disconnect from Svelta');
                                     }
-                                    status.html('<div class="sc-error">' + msg + '</div>');
-                                    btn.prop('disabled', false).text('Finish Connection');
-                                }
-
-                            }).fail(function() {
-                                status.html('<div class="sc-error">Network error. Please try again.</div>');
-                                btn.prop('disabled', false).text('Finish Connection');
+                                }).fail(function() {
+                                    alert('Network error. Please try again.');
+                                    btn.prop('disabled', false).text('Disconnect from Svelta');
+                                });
                             });
-
                         });
-
-                    });
-                })(jQuery);
-            </script>
+                    })(jQuery);
+                </script>
+            <?php endif; ?>
 
         <?php endif; ?>
 
@@ -513,132 +737,44 @@ add_action('wp_ajax_simple_connect_toggle', function () {
 });
 
 /* ---------------------------------------------------
- * AJAX: Finish Connect
- * 1) Take GUID from user (pasted after login)
- * 2) Create WooCommerce REST API key (read_write)
- * 3) Send GUID + secret to Svelta ReceivePluginCredentials
- * 4) Return everything to frontend
+ * AJAX: Disconnect from Svelta
  * ---------------------------------------------------*/
-add_action('wp_ajax_svelta_finish_connect', 'svelta_finish_connect');
+add_action('wp_ajax_svelta_disconnect', 'simple_connect_svelta_disconnect');
 
-function svelta_finish_connect()
+function simple_connect_svelta_disconnect()
 {
     check_ajax_referer('simple_connect_nonce', 'nonce');
 
-    if (!is_user_logged_in()) {
-        wp_send_json_error(['message' => 'User not logged in.']);
+    if (! current_user_can('manage_options')) {
+        wp_send_json_error(array('message' => 'Insufficient permissions'));
     }
 
-    $guid_raw = isset($_POST['svelta_guid']) ? wp_unslash($_POST['svelta_guid']) : '';
-    $guid     = trim(sanitize_text_field($guid_raw));
+    // Remember callback URL before deleting it so we can disable webhook.
+    $callback_url = get_option(SVELTA_OPTION_CALLBACK_URL);
 
-    if (empty($guid)) {
-        wp_send_json_error(['message' => 'No Svelta GUID provided.']);
-    }
+    // Try to disable matching webhook.
+    if ($callback_url && simple_connect_load_wc_webhook_bits()) {
+        $webhooks = wc_get_webhooks();
+        if (is_array($webhooks)) {
+            foreach ($webhooks as $wh) {
+                /** @var WC_Webhook $wh */
+                if (! $wh instanceof WC_Webhook) {
+                    continue;
+                }
 
-    /* ---- Ensure WooCommerce is loaded ---- */
-    if (!function_exists('WC')) {
-        $wc_main = WP_PLUGIN_DIR . '/woocommerce/woocommerce.php';
-        if (file_exists($wc_main)) {
-            include_once $wc_main;
+                if (rtrim($wh->get_delivery_url(), '/') === rtrim($callback_url, '/')) {
+                    $wh->set_status('disabled'); // keep it but disable
+                    $wh->save();
+                }
+            }
         }
     }
 
-    if (!function_exists('WC')) {
-        wp_send_json_error(['message' => 'WooCommerce could not be loaded.']);
-    }
+    // Clear saved Svelta data.
+    delete_option(SVELTA_OPTION_API_KEY);
+    delete_option(SVELTA_OPTION_CALLBACK_URL);
+    delete_option(SVELTA_OPTION_WEBHOOK_ID);
+    delete_option(SVELTA_OPTION_WEBHOOK_LAST_ERROR);
 
-    if (!function_exists('wc_rand_hash')) {
-        include_once WP_PLUGIN_DIR . '/woocommerce/includes/wc-core-functions.php';
-    }
-
-    if (!function_exists('wc_api_hash')) {
-        include_once WP_PLUGIN_DIR . '/woocommerce/includes/wc-api-functions.php';
-    }
-
-    global $wpdb;
-
-    // Detect WooCommerce API key table (legacy vs new)
-    $table_legacy = $wpdb->prefix . 'woocommerce_api_keys';
-    $table_new    = $wpdb->prefix . 'wc_api_keys';
-    $table        = null;
-
-    if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_legacy)) === $table_legacy) {
-        $table = $table_legacy;
-    } elseif ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_new)) === $table_new) {
-        $table = $table_new;
-    } else {
-        wp_send_json_error(['message' => 'WooCommerce API key table not found.']);
-    }
-
-    /* ---------------------------------------------------
-     * STEP 1: Generate WooCommerce REST API key (read_write)
-     * ---------------------------------------------------*/
-    $consumer_key    = 'ck_' . wc_rand_hash();
-    $consumer_secret = 'cs_' . wc_rand_hash();
-
-    $insert = $wpdb->insert(
-        $table,
-        [
-            'user_id'         => get_current_user_id(),
-            'description'     => 'Svelta Integration API Key',
-            'permissions'     => 'read_write',
-            'consumer_key'    => wc_api_hash($consumer_key),
-            'consumer_secret' => $consumer_secret,
-            'truncated_key'   => substr($consumer_key, -7),
-            'last_access'     => null,
-        ]
-    );
-
-    if (!$insert) {
-        wp_send_json_error([
-            'message' => 'Database insert failed.',
-            'error'   => $wpdb->last_error,
-            'query'   => $wpdb->last_query,
-        ]);
-    }
-
-    /* ---------------------------------------------------
-     * STEP 2: Send GUID + secret to Svelta
-     * ---------------------------------------------------*/
-    $store_url  = home_url();
-    $store_host = parse_url($store_url, PHP_URL_HOST) ?: $store_url;
-
-    $receive_url = "https://staging.clientapi.sveltacourier.com/api/WooCommerceAuth/ReceivePluginCredentials";
-
-    $payload = [
-        'client_id'     => $guid,
-        'client_secret' => $consumer_secret,
-    ];
-
-    $receive_response = wp_remote_post($receive_url, [
-        'method'  => 'POST',
-        'headers' => [
-            'X-api-key'    => 'a2a7853f-d5d4-44e3-a7c2-0eea20172e30',
-            'Content-Type' => 'application/json',
-        ],
-        'body'    => wp_json_encode($payload),
-        'timeout' => 20,
-    ]);
-
-    if (is_wp_error($receive_response)) {
-        wp_send_json_error([
-            'message' => 'Svelta ReceivePluginCredentials request failed: ' . $receive_response->get_error_message(),
-        ]);
-    }
-
-    $receive_body = wp_remote_retrieve_body($receive_response);
-    $receive_json = json_decode($receive_body, true);
-
-    wp_send_json_success([
-        'wc' => [
-            'consumer_key'    => $consumer_key,
-            'consumer_secret' => $consumer_secret,
-        ],
-        'svelta' => [
-            'store_url'   => $store_host,
-            'client_guid' => $guid,
-            'response'    => $receive_json,
-        ],
-    ]);
+    wp_send_json_success();
 }
