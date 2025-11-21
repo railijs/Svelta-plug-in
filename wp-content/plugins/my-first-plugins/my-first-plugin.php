@@ -1,8 +1,8 @@
 <?php
 /*
 Plugin Name: Simple Connect Plugin
-Description: WooCommerce admin activation + frontend Connect UI that opens Svelta Start URL (with dynamic store_url) and creates/updates a single WooCommerce webhook using the API key + callback URL returned by Svelta. Clean, simple Svelta-inspired design.
-Version: 22.1
+Description: Connect WooCommerce to Svelta Courier and auto-create/update a single “order.created” webhook using Svelta’s callback URL + API key.
+Version: 24.2
 Author: Railijs Didzis Grieznis
 */
 
@@ -12,12 +12,12 @@ if (! defined('ABSPATH')) exit;
  * CONSTANTS / OPTIONS
  * ---------------------------------------------------*/
 
-// Name used for the WooCommerce webhook
+// Webhook name (only for display in Woo admin).
 if (! defined('SVELTA_WEBHOOK_NAME')) {
     define('SVELTA_WEBHOOK_NAME', 'Svelta Webhook');
 }
 
-// Options where we store Svelta callback data
+// Options where we store Svelta callback data.
 if (! defined('SVELTA_OPTION_API_KEY')) {
     define('SVELTA_OPTION_API_KEY', 'svelta_api_key');
 }
@@ -36,7 +36,7 @@ if (! defined('SVELTA_OPTION_WEBHOOK_LAST_ERROR')) {
  * ---------------------------------------------------*/
 
 if (! defined('SVELTA_START_BASE_URL')) {
-    // Svelta "Start" endpoint – we append ?store_url=<host>
+    // Svelta "Start" endpoint – we append ?store_url=<host>.
     define(
         'SVELTA_START_BASE_URL',
         'https://staging.clientapi.sveltacourier.com/api/WooCommerceAuth/Start?store_url='
@@ -70,55 +70,82 @@ function simple_connect_get_svelta_start_url()
 }
 
 /* ---------------------------------------------------
- * WOO HELPERS: ENSURE WEBHOOK
+ * SMALL HELPER: MASK API KEY FOR DEBUG UI
+ * ---------------------------------------------------*/
+function simple_connect_mask_key($key)
+{
+    $key = (string) $key;
+    $len = strlen($key);
+
+    if ($len <= 8) {
+        return $key;
+    }
+
+    $start = substr($key, 0, 8);
+    $end   = substr($key, -4);
+
+    return $start . str_repeat('•', max(0, $len - 12)) . $end;
+}
+
+/* ---------------------------------------------------
+ * WOO HELPERS: WEBHOOK CREATION
  * ---------------------------------------------------*/
 
 /**
- * Load WooCommerce webhook classes/functions if needed.
+ * Load WooCommerce webhook classes/functions.
  *
- * This version:
- * - Does NOT try to manually include woocommerce.php.
- * - Uses WC_ABSPATH / WC()->plugin_path() which are the official Woo paths.
+ * @param string|null $error_out Detailed error/debug info on failure.
+ * @return bool
  */
-function simple_connect_load_wc_webhook_bits()
+function simple_connect_load_wc_webhook_bits(&$error_out = null)
 {
-    // If already loaded, nothing to do.
-    if (class_exists('WC_Webhook') && function_exists('wc_get_webhooks')) {
+    $error_out = '';
+
+    // Quick success path.
+    if (class_exists('WC_Webhook') && function_exists('wc_get_webhook') && class_exists('WC_Data_Store')) {
         return true;
     }
 
-    // WooCommerce must be active.
+    $debug = array();
+    $base  = '';
+
     if (defined('WC_ABSPATH')) {
-        $wc_base = trailingslashit(WC_ABSPATH);
-    } elseif (function_exists('WC') && WC()) {
-        // Fallback: use the plugin path from the WC instance.
-        if (method_exists(WC(), 'plugin_path')) {
-            $wc_base = trailingslashit(WC()->plugin_path());
-        } else {
-            return false;
-        }
+        $base    = trailingslashit(WC_ABSPATH);
+        $debug[] = 'base=WC_ABSPATH:' . $base;
+    } elseif (function_exists('WC') && WC() && method_exists(WC(), 'plugin_path')) {
+        $base    = trailingslashit(WC()->plugin_path());
+        $debug[] = 'base=WC()->plugin_path:' . $base;
     } else {
-        // WooCommerce not active / not loaded.
-        return false;
+        $debug[] = 'no_base_resolved';
     }
 
-    // Webhook class.
-    if (! class_exists('WC_Webhook')) {
-        $class_file = $wc_base . 'includes/class-wc-webhook.php';
-        if (file_exists($class_file)) {
+    if ($base) {
+        $class_file = $base . 'includes/class-wc-webhook.php';
+        $func_file  = $base . 'includes/wc-webhook-functions.php';
+
+        $debug[] = 'class_file_exists=' . (file_exists($class_file) ? 'yes' : 'no');
+        $debug[] = 'func_file_exists=' . (file_exists($func_file) ? 'yes' : 'no');
+
+        if (file_exists($class_file) && ! class_exists('WC_Webhook')) {
             include_once $class_file;
         }
-    }
 
-    // Webhook helper functions (wc_get_webhooks).
-    if (! function_exists('wc_get_webhooks')) {
-        $func_file = $wc_base . 'includes/wc-webhook-functions.php';
-        if (file_exists($func_file)) {
+        if (file_exists($func_file) && ! function_exists('wc_get_webhook')) {
             include_once $func_file;
         }
     }
 
-    return class_exists('WC_Webhook') && function_exists('wc_get_webhooks');
+    $ok = class_exists('WC_Webhook') && function_exists('wc_get_webhook') && class_exists('WC_Data_Store');
+
+    if (! $ok) {
+        $debug[] = 'class_exists_WC_Webhook=' . (class_exists('WC_Webhook') ? 'yes' : 'no');
+        $debug[] = 'func_wc_get_webhook=' . (function_exists('wc_get_webhook') ? 'yes' : 'no');
+        $debug[] = 'class_exists_WC_Data_Store=' . (class_exists('WC_Data_Store') ? 'yes' : 'no');
+        $error_out = implode(' | ', $debug);
+        return false;
+    }
+
+    return true;
 }
 
 /**
@@ -128,7 +155,7 @@ function simple_connect_load_wc_webhook_bits()
  * - topic        = order.created
  *
  * Returns true on success, false on failure.
- * On failure, $error_msg (if passed) will contain a message.
+ * On failure, $error_msg will contain a message.
  */
 function simple_connect_ensure_webhook($api_key, $callback_url, &$error_msg = null)
 {
@@ -139,39 +166,48 @@ function simple_connect_ensure_webhook($api_key, $callback_url, &$error_msg = nu
         return false;
     }
 
-    if (! simple_connect_load_wc_webhook_bits()) {
-        $error_msg = 'WooCommerce webhook classes/functions are not available.';
+    $loader_error = '';
+    if (! simple_connect_load_wc_webhook_bits($loader_error)) {
+        $error_msg = 'WooCommerce webhook classes/functions are not available: ' . $loader_error;
         return false;
     }
 
-    $delivery_url      = $callback_url;
-    $saved_webhook_id  = (int) get_option(SVELTA_OPTION_WEBHOOK_ID);
-    $webhook           = null;
+    $delivery_url     = $callback_url;
+    $saved_webhook_id = (int) get_option(SVELTA_OPTION_WEBHOOK_ID);
+    $webhook          = null;
 
-    // 1) Try to load existing webhook by saved ID.
-    if ($saved_webhook_id > 0) {
-        if (function_exists('wc_get_webhook')) {
-            $maybe = wc_get_webhook($saved_webhook_id);
-        } else {
-            $maybe = new WC_Webhook($saved_webhook_id);
+    // --- 1) Try to find an existing "Svelta" webhook among ALL webhooks ---
+    if (class_exists('WC_Data_Store')) {
+        try {
+            $data_store = WC_Data_Store::load('webhook');
+            $ids        = $data_store->get_webhooks_ids('');
+        } catch (Exception $e) {
+            $ids = array();
         }
 
-        if ($maybe && $maybe->get_id()) {
-            $webhook = $maybe;
-        }
-    }
+        if (is_array($ids)) {
+            foreach ($ids as $id) {
+                try {
+                    $wh = wc_get_webhook($id);
+                } catch (Exception $e) {
+                    $wh = null;
+                }
 
-    // 2) If not found, try by Delivery URL (so we don't create duplicates).
-    if (! $webhook) {
-        $all = wc_get_webhooks();
-        if (is_array($all)) {
-            foreach ($all as $wh) {
-                /** @var WC_Webhook $wh */
                 if (! $wh instanceof WC_Webhook) {
                     continue;
                 }
 
-                if (rtrim($wh->get_delivery_url(), '/') === rtrim($delivery_url, '/')) {
+                $name = $wh->get_name();
+
+                // Reuse this webhook if:
+                // - it's the one we stored previously, OR
+                // - it has the same delivery URL, OR
+                // - its name looks like a Svelta webhook.
+                if (
+                    ($saved_webhook_id > 0 && $wh->get_id() === $saved_webhook_id) ||
+                    rtrim($wh->get_delivery_url(), '/') === rtrim($delivery_url, '/') ||
+                    (is_string($name) && stripos($name, 'svelta webhook') !== false)
+                ) {
                     $webhook = $wh;
                     break;
                 }
@@ -179,13 +215,26 @@ function simple_connect_ensure_webhook($api_key, $callback_url, &$error_msg = nu
         }
     }
 
-    // 3) Create a new webhook if still none.
+    // --- 2) Fallback: directly load by stored ID if we still didn't find one ---
+    if (! $webhook && $saved_webhook_id > 0) {
+        try {
+            $maybe = wc_get_webhook($saved_webhook_id);
+        } catch (Exception $e) {
+            $maybe = null;
+        }
+
+        if ($maybe instanceof WC_Webhook && $maybe->get_id()) {
+            $webhook = $maybe;
+        }
+    }
+
+    // --- 3) If still none, create a new webhook ---
     if (! $webhook) {
         $webhook = new WC_Webhook();
         $webhook->set_name(SVELTA_WEBHOOK_NAME . ' (order.created)');
     }
 
-    // 4) Configure webhook fields.
+    // --- 4) Configure webhook fields ---
     $webhook->set_status('active');
     $webhook->set_topic('order.created');
     $webhook->set_delivery_url($delivery_url);
@@ -194,12 +243,11 @@ function simple_connect_ensure_webhook($api_key, $callback_url, &$error_msg = nu
         $webhook->set_secret($api_key);
     }
 
-    // Use API v3.
     if (method_exists($webhook, 'set_api_version')) {
         $webhook->set_api_version(3);
     }
 
-    // 5) Save.
+    // --- 5) Save ---
     $saved_id = $webhook->save();
 
     if (! $saved_id) {
@@ -207,7 +255,6 @@ function simple_connect_ensure_webhook($api_key, $callback_url, &$error_msg = nu
         return false;
     }
 
-    // Remember ID for next time.
     update_option(SVELTA_OPTION_WEBHOOK_ID, (int) $saved_id);
 
     return true;
@@ -249,14 +296,20 @@ function simple_connect_admin_page()
         $callback_api_key = sanitize_text_field(wp_unslash($_GET['api_key']));
         $callback_url     = esc_url_raw(wp_unslash($_GET['callback_url']));
 
-        // Save in options so we can show them and use them later.
+        // Save in options so we can use them later (even when URL params are gone).
         update_option(SVELTA_OPTION_API_KEY, $callback_api_key);
         update_option(SVELTA_OPTION_CALLBACK_URL, $callback_url);
 
-        // Create / update webhook based on these values.
+        // Immediately create / update webhook.
         $error = '';
         $ok    = simple_connect_ensure_webhook($callback_api_key, $callback_url, $error);
         update_option(SVELTA_OPTION_WEBHOOK_LAST_ERROR, $ok ? '' : $error);
+
+        // 🔑 IMPORTANT: redirect to clean URL so api_key/callback_url
+        // are not in the address bar and don't re-trigger this block.
+        $clean_url = remove_query_arg(array('api_key', 'callback_url'));
+        wp_safe_redirect($clean_url);
+        exit;
     }
 
 ?>
@@ -601,6 +654,8 @@ function simple_connect_frontend_ui($is_admin_test = false)
 
     $existing_callback = get_option(SVELTA_OPTION_CALLBACK_URL);
     $webhook_error     = get_option(SVELTA_OPTION_WEBHOOK_LAST_ERROR);
+    $stored_api_key    = get_option(SVELTA_OPTION_API_KEY);
+    $stored_webhook_id = (int) get_option(SVELTA_OPTION_WEBHOOK_ID);
 
     // Saved connection (from previous callback).
     $has_saved_connection = simple_connect_has_svelta_connection();
@@ -666,14 +721,49 @@ function simple_connect_frontend_ui($is_admin_test = false)
                             </code>
 
                             <?php if ($is_admin_test) : ?>
+
+                                <div class="sc-webhook-note">
+                                    <strong>Debug (only visible to admins):</strong><br>
+                                    API key:&nbsp;
+                                    <?php
+                                    if ($stored_api_key) {
+                                        echo '<code>' . esc_html(simple_connect_mask_key($stored_api_key)) . '</code>';
+                                    } else {
+                                        echo '<em>not set</em>';
+                                    }
+                                    ?><br>
+                                    Callback URL:&nbsp;
+                                    <?php
+                                    if ($existing_callback) {
+                                        echo '<code>' . esc_html($existing_callback) . '</code>';
+                                    } else {
+                                        echo '<em>not set</em>';
+                                    }
+                                    ?><br>
+                                    Webhook ID:&nbsp;
+                                    <?php
+                                    if ($stored_webhook_id) {
+                                        echo '<code>' . esc_html($stored_webhook_id) . '</code>';
+                                    } else {
+                                        echo '<em>not set</em>';
+                                    }
+                                    ?>
+                                </div>
+
                                 <?php if (! empty($webhook_error)) : ?>
                                     <div class="sc-webhook-note sc-webhook-note-error">
                                         Webhook error: <?php echo esc_html($webhook_error); ?>
                                     </div>
-                                <?php else : ?>
+                                <?php elseif ($stored_webhook_id) : ?>
                                     <div class="sc-webhook-note">
                                         Webhook for <code>order.created</code> has been created or updated
                                         in WooCommerce → Settings → Advanced → Webhooks.
+                                    </div>
+                                <?php else : ?>
+                                    <div class="sc-webhook-note">
+                                        Webhook has not been created yet (no ID stored). After refreshing this
+                                        page or visiting another admin page, this message should disappear and
+                                        a Webhook ID should appear above.
                                     </div>
                                 <?php endif; ?>
 
@@ -752,18 +842,26 @@ function simple_connect_svelta_disconnect()
     // Remember callback URL before deleting it so we can disable webhook.
     $callback_url = get_option(SVELTA_OPTION_CALLBACK_URL);
 
-    // Try to disable matching webhook.
-    if ($callback_url && simple_connect_load_wc_webhook_bits()) {
-        $webhooks = wc_get_webhooks();
-        if (is_array($webhooks)) {
-            foreach ($webhooks as $wh) {
-                /** @var WC_Webhook $wh */
-                if (! $wh instanceof WC_Webhook) {
-                    continue;
+    // Try to disable matching webhook via data store.
+    $dummy_error = '';
+    if ($callback_url && simple_connect_load_wc_webhook_bits($dummy_error) && class_exists('WC_Data_Store')) {
+        try {
+            $data_store = WC_Data_Store::load('webhook');
+            $ids        = $data_store->get_webhooks_ids('');
+        } catch (Exception $e) {
+            $ids = array();
+        }
+
+        if (is_array($ids)) {
+            foreach ($ids as $id) {
+                try {
+                    $wh = wc_get_webhook($id);
+                } catch (Exception $e) {
+                    $wh = null;
                 }
 
-                if (rtrim($wh->get_delivery_url(), '/') === rtrim($callback_url, '/')) {
-                    $wh->set_status('disabled'); // keep it but disable
+                if ($wh instanceof WC_Webhook && rtrim($wh->get_delivery_url(), '/') === rtrim($callback_url, '/')) {
+                    $wh->set_status('disabled'); // keep it but disable.
                     $wh->save();
                 }
             }
