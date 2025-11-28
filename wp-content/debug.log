@@ -169,3 +169,17 @@
 [28-Nov-2025 09:14:15 UTC] [Simple Connect] Webhook created/updated successfully after connect.
 [28-Nov-2025 09:14:15 UTC] [Simple Connect] Using existing Woo REST key (ID 22).
 [28-Nov-2025 09:14:15 UTC] [Simple Connect] Successfully sent plugin credentials to Svelta (ReceivePluginCredentials, HTTP 200).
+[28-Nov-2025 09:45:33 UTC] [Simple Connect] Disconnected from Svelta (config cleared, webhook disabled).
+[28-Nov-2025 09:45:49 UTC] [Simple Connect] Received callback from Svelta with api_key and callback_url.
+[28-Nov-2025 09:45:49 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_pending-pickup).
+[28-Nov-2025 09:45:49 UTC] [Simple Connect] Webhook created/updated successfully after connect.
+[28-Nov-2025 09:45:49 UTC] [Simple Connect] Stored Woo REST key (ID 22) not found in DB, will create a new one.
+[28-Nov-2025 09:45:49 UTC] [Simple Connect] Created Woo REST key via direct DB insert (ID 23).
+[28-Nov-2025 09:45:50 UTC] [Simple Connect] Successfully sent plugin credentials to Svelta (ReceivePluginCredentials, HTTP 200).
+[28-Nov-2025 10:05:22 UTC] [Simple Connect] Disconnected from Svelta (config cleared, webhook disabled).
+[28-Nov-2025 10:05:56 UTC] [Simple Connect] Received callback from Svelta with api_key and callback_url.
+[28-Nov-2025 10:05:56 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_pending-pickup).
+[28-Nov-2025 10:05:56 UTC] [Simple Connect] Webhook created/updated successfully after connect.
+[28-Nov-2025 10:05:56 UTC] [Simple Connect] Stored Woo REST key (ID 23) not found in DB, will create a new one.
+[28-Nov-2025 10:05:56 UTC] [Simple Connect] Created Woo REST key via direct DB insert (ID 24).
+[28-Nov-2025 10:05:57 UTC] [Simple Connect] Successfully sent plugin credentials to Svelta (ReceivePluginCredentials, HTTP 200).
