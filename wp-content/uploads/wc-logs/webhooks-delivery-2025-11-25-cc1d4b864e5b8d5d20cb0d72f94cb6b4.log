@@ -1,0 +1,57 @@
+2025-11-25T13:57:00+00:00 INFO Array
+(
+    [Webhook Delivery] => Array
+        (
+            [Delivery ID] => 8fe71d888f7f0582be0bfe266d12dad0
+            [Date] => Nov 25, 2025 @ 13:57
+            [URL] => https://clientapi.sveltacourier.com/api/WebHooks/WoocommerceOrderUpdated
+            [Duration] => 0.59897
+            [Request] => Array
+                (
+                    [Method] => POST
+                    [Headers] => Array
+                        (
+                            [User-Agent] => WooCommerce/10.3.5 Hookshot (WordPress/6.8.3)
+                            [Content-Type] => application/json
+                            [X-WC-Webhook-Source] => http://localhost/
+                            [X-WC-Webhook-Topic] => action.woocommerce_order_status_completed
+                            [X-WC-Webhook-Resource] => action
+                            [X-WC-Webhook-Event] => woocommerce_order_status_completed
+                            [X-WC-Webhook-Signature] => kBfmb4uDT31238cs7kvUoVANE6dIFO5o2/2O5Iwtlnk=
+                            [X-WC-Webhook-ID] => 46
+                            [X-WC-Webhook-Delivery-ID] => 8fe71d888f7f0582be0bfe266d12dad0
+                        )
+
+                )
+
+            [Body] => {\"action\":\"woocommerce_order_status_completed\",\"arg\":96}
+            [Response] => Array
+                (
+                    [Code] => 200
+                    [Message] => OK
+                    [Headers] => WpOrg\Requests\Utility\CaseInsensitiveDictionary Object
+                        (
+                            [data:protected] => Array
+                                (
+                                    [date] => Tue, 25 Nov 2025 13:56:56 GMT
+                                    [content-type] => application/json; charset=utf-8
+                                    [request-context] => appId=cid-v1:f3ed31cd-3ebb-45df-8353-a03edce9b4ca
+                                    [strict-transport-security] => max-age=31536000; includeSubDomains
+                                    [cf-cache-status] => DYNAMIC
+                                    [nel] => {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+                                    [report-to] => {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=WfKNnUWfpE0SDTmt0e2fIttv7DZVC3KTD4lZku482I%2FbOzg%2BzVjjad6K%2FOMAWu3MU5LMRv%2Fq8gVIAKbOn04hu2%2FbxjNEU3JvXZ2ChhWygxQPTs7FScVDeVldi9%2BN3XNG3gtw768%3D"}]}
+                                    [content-encoding] => gzip
+                                    [server] => cloudflare
+                                    [cf-ray] => 9a41a6fdda74d627-LCA
+                                    [alt-svc] => h3=":443"; ma=86400
+                                )
+
+                        )
+
+                    [Body] => {"cnt":-1}
+                )
+
+        )
+
+)
+

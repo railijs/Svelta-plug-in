@@ -1,0 +1,57 @@
+2025-11-21T08:42:00+00:00 INFO Array
+(
+    [Webhook Delivery] => Array
+        (
+            [Delivery ID] => 74f14c00d59c462f299642b006984949
+            [Date] => Nov 21, 2025 @ 8:42
+            [URL] => https://clientapi.sveltacourier.com/api/WebHooks/WoocommerceOrderUpdated
+            [Duration] => 1.86646
+            [Request] => Array
+                (
+                    [Method] => POST
+                    [Headers] => Array
+                        (
+                            [User-Agent] => WooCommerce/10.3.5 Hookshot (WordPress/6.8.3)
+                            [Content-Type] => application/json
+                            [X-WC-Webhook-Source] => http://localhost/
+                            [X-WC-Webhook-Topic] => order.created
+                            [X-WC-Webhook-Resource] => order
+                            [X-WC-Webhook-Event] => created
+                            [X-WC-Webhook-Signature] => aoCh+tMstSKmPyP9E1UmKQwpPQySUfSujVnmDOiOGVE=
+                            [X-WC-Webhook-ID] => 46
+                            [X-WC-Webhook-Delivery-ID] => 74f14c00d59c462f299642b006984949
+                        )
+
+                )
+
+            [Body] => {\"code\":\"woocommerce_rest_cannot_view\",\"message\":\"Sorry, you cannot view this resource.\",\"data\":{\"status\":401}}
+            [Response] => Array
+                (
+                    [Code] => 200
+                    [Message] => OK
+                    [Headers] => WpOrg\Requests\Utility\CaseInsensitiveDictionary Object
+                        (
+                            [data:protected] => Array
+                                (
+                                    [date] => Fri, 21 Nov 2025 08:42:00 GMT
+                                    [content-type] => application/json; charset=utf-8
+                                    [request-context] => appId=cid-v1:f3ed31cd-3ebb-45df-8353-a03edce9b4ca
+                                    [strict-transport-security] => max-age=31536000; includeSubDomains
+                                    [cf-cache-status] => DYNAMIC
+                                    [nel] => {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+                                    [report-to] => {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=PQEv24Tu45obXmvcQ6xcQPVLC2DIXWXqUREdNCuSyHQmqd24PCVfSVhzWh4XXDLlvsLauORl8oSpJgnzhKCmrP%2FwUpr189Q%2B56Hl%2F7kIVSjs9K9O1UCWAis%3D"}]}
+                                    [content-encoding] => gzip
+                                    [server] => cloudflare
+                                    [cf-ray] => 9a1ee4279d2ed628-LCA
+                                    [alt-svc] => h3=":443"; ma=86400
+                                )
+
+                        )
+
+                    [Body] => {"cnt":-1}
+                )
+
+        )
+
+)
+

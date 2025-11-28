@@ -1,0 +1,171 @@
+[21-Nov-2025 09:44:48 UTC] [Simple Connect] Notifying Svelta backend. Site key: 2D3Zok71TYpV0OcRT4P8VtsmljtpkTyAD929gAeA
+[21-Nov-2025 09:44:49 UTC] [Simple Connect] Svelta backend responded with: 404
+[21-Nov-2025 11:40:32 UTC] [Simple Connect] Registering Svelta order meta box
+[21-Nov-2025 12:26:22 UTC] [Simple Connect] Registering Svelta order meta box
+[21-Nov-2025 12:28:44 UTC] [Simple Connect] Registering Svelta order meta box
+[21-Nov-2025 13:46:51 UTC] Automatic updates starting...
+[21-Nov-2025 13:46:53 UTC]   Automatic plugin updates starting...
+[21-Nov-2025 13:46:53 UTC]   Automatic plugin updates complete.
+[21-Nov-2025 13:46:54 UTC] Automatic updates complete.
+[24-Nov-2025 06:22:55 UTC] Automatic updates starting...
+[24-Nov-2025 06:22:55 UTC]   Automatic plugin updates starting...
+[24-Nov-2025 06:22:55 UTC]   Automatic plugin updates complete.
+[24-Nov-2025 06:22:55 UTC] Automatic updates complete.
+[24-Nov-2025 08:23:45 UTC] [Simple Connect] Registering Svelta order meta box
+[24-Nov-2025 09:12:13 UTC] [Simple Connect] Could not load WC_REST_API_Keys_Controller, REST key not created.
+[24-Nov-2025 09:15:28 UTC] [Simple Connect] Could not load WC_REST_API_Keys_Controller, REST key not created.
+[24-Nov-2025 09:36:03 UTC] [Simple Connect] Could not load WC_REST_API_Keys_Controller, REST key not created.
+[24-Nov-2025 09:41:03 UTC] [Simple Connect] Could not load WC_REST_API_Keys_Controller after trying known paths, REST key not created.
+[24-Nov-2025 11:53:18 UTC] [Simple Connect] Disconnected from Svelta (config cleared, webhook disabled).
+[24-Nov-2025 11:53:38 UTC] [Simple Connect] Received callback from Svelta with api_key and callback_url.
+[24-Nov-2025 11:53:38 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_completed).
+[24-Nov-2025 11:53:38 UTC] [Simple Connect] Webhook created/updated successfully after connect.
+[24-Nov-2025 11:53:38 UTC] [Simple Connect] Using existing Woo REST key (ID 21).
+[24-Nov-2025 11:53:38 UTC] [Simple Connect] RegisterStoreKey responded with HTTP 404.
+[24-Nov-2025 11:53:39 UTC] [Simple Connect] Successfully sent plugin credentials to Svelta (ReceivePluginCredentials, HTTP 200).
+[24-Nov-2025 12:23:22 UTC] [Simple Connect] Disconnected from Svelta (config cleared, webhook disabled).
+[24-Nov-2025 12:23:53 UTC] [Simple Connect] Received callback from Svelta with api_key and callback_url.
+[24-Nov-2025 12:23:53 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_completed).
+[24-Nov-2025 12:23:53 UTC] [Simple Connect] Webhook created/updated successfully after connect.
+[24-Nov-2025 12:23:53 UTC] [Simple Connect] Using existing Woo REST key (ID 21).
+[24-Nov-2025 12:23:54 UTC] [Simple Connect] Successfully sent plugin credentials to Svelta (ReceivePluginCredentials, HTTP 200).
+[24-Nov-2025 12:24:27 UTC] [Simple Connect] Received callback from Svelta with api_key and callback_url.
+[24-Nov-2025 12:24:27 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_completed).
+[24-Nov-2025 12:24:27 UTC] [Simple Connect] Webhook created/updated successfully after connect.
+[24-Nov-2025 12:24:27 UTC] [Simple Connect] Using existing Woo REST key (ID 21).
+[24-Nov-2025 12:24:27 UTC] [Simple Connect] Successfully sent plugin credentials to Svelta (ReceivePluginCredentials, HTTP 200).
+[24-Nov-2025 12:25:06 UTC] [Simple Connect] Disconnected from Svelta (config cleared, webhook disabled).
+[24-Nov-2025 12:25:18 UTC] [Simple Connect] Received callback from Svelta with api_key and callback_url.
+[24-Nov-2025 12:25:18 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_completed).
+[24-Nov-2025 12:25:18 UTC] [Simple Connect] Webhook created/updated successfully after connect.
+[24-Nov-2025 12:25:18 UTC] [Simple Connect] Using existing Woo REST key (ID 21).
+[24-Nov-2025 12:25:18 UTC] [Simple Connect] Successfully sent plugin credentials to Svelta (ReceivePluginCredentials, HTTP 200).
+[24-Nov-2025 13:01:33 UTC] [Simple Connect] Disconnected from Svelta (config cleared, webhook disabled).
+[24-Nov-2025 13:01:49 UTC] [Simple Connect] Received callback from Svelta with api_key and callback_url.
+[24-Nov-2025 13:01:49 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_completed).
+[24-Nov-2025 13:01:49 UTC] [Simple Connect] Webhook created/updated successfully after connect.
+[24-Nov-2025 13:01:49 UTC] [Simple Connect] Using existing Woo REST key (ID 21).
+[24-Nov-2025 13:01:50 UTC] [Simple Connect] Successfully sent plugin credentials to Svelta (ReceivePluginCredentials, HTTP 200).
+[25-Nov-2025 09:03:06 UTC] [Simple Connect] Disconnected from Svelta (config cleared, webhook disabled).
+[25-Nov-2025 09:03:31 UTC] [Simple Connect] Received callback from Svelta with api_key and callback_url.
+[25-Nov-2025 09:03:31 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_completed).
+[25-Nov-2025 09:03:31 UTC] [Simple Connect] Webhook created/updated successfully after connect.
+[25-Nov-2025 09:03:31 UTC] [Simple Connect] Using existing Woo REST key (ID 21).
+[25-Nov-2025 09:03:32 UTC] [Simple Connect] Successfully sent plugin credentials to Svelta (ReceivePluginCredentials, HTTP 200).
+[25-Nov-2025 11:03:40 UTC] [Simple Connect] Disconnected from Svelta (config cleared, webhook disabled).
+[25-Nov-2025 11:11:30 UTC] [Simple Connect] Received callback from Svelta with api_key and callback_url.
+[25-Nov-2025 11:11:30 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_completed).
+[25-Nov-2025 11:11:30 UTC] [Simple Connect] Webhook created/updated successfully after connect.
+[25-Nov-2025 11:11:30 UTC] [Simple Connect] Using existing Woo REST key (ID 21).
+[25-Nov-2025 11:11:32 UTC] [Simple Connect] Successfully sent plugin credentials to Svelta (ReceivePluginCredentials, HTTP 200).
+[25-Nov-2025 13:25:49 UTC] [Simple Connect] Disconnected from Svelta (config cleared, webhook disabled).
+[25-Nov-2025 13:26:03 UTC] [Simple Connect] Received callback from Svelta with api_key and callback_url.
+[25-Nov-2025 13:26:03 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_completed).
+[25-Nov-2025 13:26:03 UTC] [Simple Connect] Webhook created/updated successfully after connect.
+[25-Nov-2025 13:26:03 UTC] [Simple Connect] Using existing Woo REST key (ID 21).
+[25-Nov-2025 13:26:04 UTC] [Simple Connect] Successfully sent plugin credentials to Svelta (ReceivePluginCredentials, HTTP 200).
+[25-Nov-2025 13:49:52 UTC] Automatic updates starting...
+[25-Nov-2025 13:49:52 UTC] [Simple Connect] Disconnected from Svelta (config cleared, webhook disabled).
+[25-Nov-2025 13:49:54 UTC]   Automatic plugin updates starting...
+[25-Nov-2025 13:49:54 UTC]   Automatic plugin updates complete.
+[25-Nov-2025 13:49:55 UTC] Automatic updates complete.
+[25-Nov-2025 13:50:53 UTC] [Simple Connect] Received callback from Svelta with api_key and callback_url.
+[25-Nov-2025 13:50:53 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_completed).
+[25-Nov-2025 13:50:53 UTC] [Simple Connect] Webhook created/updated successfully after connect.
+[25-Nov-2025 13:50:53 UTC] [Simple Connect] Using existing Woo REST key (ID 21).
+[25-Nov-2025 13:50:56 UTC] [Simple Connect] HTTP call to Svelta [https://staging.clientapi.sveltacourier.com/api/WooCommerceAuth/ReceivePluginCredentials] responded with HTTP 200
+[25-Nov-2025 13:50:56 UTC] [Simple Connect] Successfully sent plugin credentials to Svelta (ReceivePluginCredentials, HTTP 200).
+[25-Nov-2025 13:54:57 UTC] [Simple Connect] Order 96 status changed from pending to pending-delivery. Current Svelta trigger option is "wc-completed" (webhook topic action.woocommerce_order_status_completed).
+[25-Nov-2025 13:56:31 UTC] [Simple Connect] Order 96 status changed from pending-delivery to completed. Current Svelta trigger option is "wc-completed" (webhook topic action.woocommerce_order_status_completed).
+[25-Nov-2025 13:57:00 UTC] [Simple Connect] HTTP call to Svelta [https://clientapi.sveltacourier.com/api/WebHooks/WoocommerceOrderUpdated] responded with HTTP 200
+[26-Nov-2025 08:34:23 UTC] [Simple Connect] Order 96 status changed from completed to processing. Current Svelta trigger option is "wc-completed" (webhook topic action.woocommerce_order_status_completed).
+[26-Nov-2025 09:07:08 UTC] [Simple Connect] HTTP call to Svelta [https://staging.clientapi.sveltacourier.com/api/WooCommerceDelivery/Status] responded with HTTP 404
+[26-Nov-2025 09:35:38 UTC] [Simple Connect] HTTP call to Svelta [https://staging.clientapi.sveltacourier.com/api/WooCommerceDelivery/Status] responded with HTTP 404
+[26-Nov-2025 09:40:04 UTC] [Simple Connect] HTTP call to Svelta [https://staging.clientapi.sveltacourier.com/api/WooCommerceDelivery/Status] responded with HTTP 404
+[26-Nov-2025 09:42:20 UTC] [Simple Connect] HTTP call to Svelta [https://staging.clientapi.sveltacourier.com/api/WooCommerceDelivery/Status] responded with HTTP 404
+[26-Nov-2025 10:02:30 UTC] [Simple Connect] Disconnected from Svelta (config cleared, webhook disabled).
+[26-Nov-2025 10:03:58 UTC] [Simple Connect] Received callback from Svelta with api_key and callback_url.
+[26-Nov-2025 10:03:58 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_completed).
+[26-Nov-2025 10:03:58 UTC] [Simple Connect] Webhook created/updated successfully after connect.
+[26-Nov-2025 10:03:58 UTC] [Simple Connect] Using existing Woo REST key (ID 21).
+[26-Nov-2025 10:03:59 UTC] [Simple Connect] HTTP call to Svelta [https://staging.clientapi.sveltacourier.com/api/WooCommerceAuth/ReceivePluginCredentials] responded with HTTP 200
+[26-Nov-2025 10:03:59 UTC] [Simple Connect] Successfully sent plugin credentials to Svelta (ReceivePluginCredentials, HTTP 200).
+[26-Nov-2025 10:04:12 UTC] [Simple Connect] HTTP call to Svelta [https://staging.clientapi.sveltacourier.com/api/WooCommerceDelivery/Status] responded with HTTP 404
+[26-Nov-2025 10:05:25 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_completed).
+[26-Nov-2025 10:05:25 UTC] [Simple Connect] Webhook updated after trigger status change (new topic based on wc-completed).
+[26-Nov-2025 10:06:06 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_pending-pickup).
+[26-Nov-2025 10:06:06 UTC] [Simple Connect] Webhook updated after trigger status change (new topic based on wc-pending-pickup).
+[26-Nov-2025 13:47:01 UTC] Automatic updates starting...
+[26-Nov-2025 13:47:06 UTC]   Automatic plugin updates starting...
+[26-Nov-2025 13:47:06 UTC]   Automatic plugin updates complete.
+[26-Nov-2025 13:47:07 UTC] Automatic updates complete.
+[27-Nov-2025 08:17:47 UTC] [Simple Connect] Disconnected from Svelta (config cleared, webhook disabled).
+[27-Nov-2025 08:17:59 UTC] [Simple Connect] Received callback from Svelta with api_key and callback_url.
+[27-Nov-2025 08:17:59 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_pending-pickup).
+[27-Nov-2025 08:17:59 UTC] [Simple Connect] Webhook created/updated successfully after connect.
+[27-Nov-2025 08:17:59 UTC] [Simple Connect] Using existing Woo REST key (ID 21).
+[27-Nov-2025 08:18:00 UTC] [Simple Connect] Successfully sent plugin credentials to Svelta (ReceivePluginCredentials, HTTP 200).
+[27-Nov-2025 08:48:00 UTC] [Simple Connect] Disconnected from Svelta (config cleared, webhook disabled).
+[28-Nov-2025 08:21:40 UTC] Automatic updates starting...
+[28-Nov-2025 08:21:43 UTC]   Automatic plugin updates starting...
+[28-Nov-2025 08:21:43 UTC]   Automatic plugin updates complete.
+[28-Nov-2025 08:21:43 UTC] Automatic updates complete.
+[28-Nov-2025 08:35:56 UTC] [Simple Connect] Received callback from Svelta with api_key and callback_url.
+[28-Nov-2025 08:35:56 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_pending-pickup).
+[28-Nov-2025 08:35:56 UTC] [Simple Connect] Webhook created/updated successfully after connect.
+[28-Nov-2025 08:35:56 UTC] [Simple Connect] Using existing Woo REST key (ID 21).
+[28-Nov-2025 08:35:57 UTC] [Simple Connect] Successfully sent plugin credentials to Svelta (ReceivePluginCredentials, HTTP 200).
+[28-Nov-2025 08:36:49 UTC] [Simple Connect] Disconnected from Svelta (config cleared, webhook disabled).
+[28-Nov-2025 08:37:04 UTC] PHP Warning:  Trying to access array offset on false in C:\laragon\www\wordpress\wp-content\plugins\jetpack\jetpack_vendor\automattic\jetpack-connection\src\class-manager.php on line 2112
+[28-Nov-2025 08:37:04 UTC] PHP Deprecated:  urlencode(): Passing null to parameter #1 ($string) of type string is deprecated in C:\laragon\www\wordpress\wp-includes\formatting.php on line 5144
+[28-Nov-2025 08:37:08 UTC] [Simple Connect] Received callback from Svelta with api_key and callback_url.
+[28-Nov-2025 08:37:08 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_pending-pickup).
+[28-Nov-2025 08:37:08 UTC] [Simple Connect] Webhook created/updated successfully after connect.
+[28-Nov-2025 08:37:08 UTC] [Simple Connect] Using existing Woo REST key (ID 21).
+[28-Nov-2025 08:37:08 UTC] [Simple Connect] Successfully sent plugin credentials to Svelta (ReceivePluginCredentials, HTTP 200).
+[28-Nov-2025 08:40:48 UTC] [Simple Connect] Disconnected from Svelta (config cleared, webhook disabled).
+[28-Nov-2025 08:41:07 UTC] [Simple Connect] Received callback from Svelta with api_key and callback_url.
+[28-Nov-2025 08:41:07 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_pending-pickup).
+[28-Nov-2025 08:41:07 UTC] [Simple Connect] Webhook created/updated successfully after connect.
+[28-Nov-2025 08:41:07 UTC] [Simple Connect] Using existing Woo REST key (ID 21) without validation (REST classes missing).
+[28-Nov-2025 08:41:07 UTC] [Simple Connect] Successfully sent plugin credentials to Svelta (ReceivePluginCredentials, HTTP 200).
+[28-Nov-2025 08:44:31 UTC] [Simple Connect] Disconnected from Svelta (config cleared, webhook disabled).
+[28-Nov-2025 08:44:43 UTC] [Simple Connect] Disconnected from Svelta (config cleared, webhook disabled).
+[28-Nov-2025 08:45:10 UTC] [Simple Connect] Received callback from Svelta with api_key and callback_url.
+[28-Nov-2025 08:45:10 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_pending-pickup).
+[28-Nov-2025 08:45:10 UTC] [Simple Connect] Webhook created/updated successfully after connect.
+[28-Nov-2025 08:45:10 UTC] [Simple Connect] Using existing Woo REST key (ID 21) without validation (REST classes missing).
+[28-Nov-2025 08:45:10 UTC] [Simple Connect] Successfully sent plugin credentials to Svelta (ReceivePluginCredentials, HTTP 200).
+[28-Nov-2025 08:55:33 UTC] PHP Fatal error:  Cannot redeclare simple_connect_notify_backend_on_connect() (previously declared in C:\laragon\www\wordpress\wp-content\plugins\simple-connect\includes\rest-keys.php:161) in C:\laragon\www\wordpress\wp-content\plugins\simple-connect\includes\rest-keys.php on line 273
+[28-Nov-2025 08:55:49 UTC] PHP Fatal error:  Cannot redeclare simple_connect_notify_backend_on_connect() (previously declared in C:\laragon\www\wordpress\wp-content\plugins\simple-connect\includes\rest-keys.php:161) in C:\laragon\www\wordpress\wp-content\plugins\simple-connect\includes\rest-keys.php on line 273
+[28-Nov-2025 08:55:54 UTC] PHP Fatal error:  Cannot redeclare simple_connect_notify_backend_on_connect() (previously declared in C:\laragon\www\wordpress\wp-content\plugins\simple-connect\includes\rest-keys.php:161) in C:\laragon\www\wordpress\wp-content\plugins\simple-connect\includes\rest-keys.php on line 273
+[28-Nov-2025 08:55:55 UTC] PHP Fatal error:  Cannot redeclare simple_connect_notify_backend_on_connect() (previously declared in C:\laragon\www\wordpress\wp-content\plugins\simple-connect\includes\rest-keys.php:161) in C:\laragon\www\wordpress\wp-content\plugins\simple-connect\includes\rest-keys.php on line 273
+[28-Nov-2025 08:56:09 UTC] [Simple Connect] Disconnected from Svelta (config cleared, webhook disabled).
+[28-Nov-2025 08:56:45 UTC] [Simple Connect] Received callback from Svelta with api_key and callback_url.
+[28-Nov-2025 08:56:46 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_pending-pickup).
+[28-Nov-2025 08:56:46 UTC] [Simple Connect] Webhook created/updated successfully after connect.
+[28-Nov-2025 08:56:46 UTC] [Simple Connect] Stored Woo REST key (ID 21) not found in DB, will create a new one.
+[28-Nov-2025 08:56:46 UTC] [Simple Connect] Could not load WC_REST_API_Keys_Controller or WP_REST_Request, REST key not created.
+[28-Nov-2025 08:56:46 UTC] [Simple Connect] Unable to send plugin credentials to Svelta because Woo REST key could not be created.
+[28-Nov-2025 09:01:07 UTC] [Simple Connect] Disconnected from Svelta (config cleared, webhook disabled).
+[28-Nov-2025 09:05:38 UTC] [Simple Connect] Disconnected from Svelta (config cleared, webhook disabled).
+[28-Nov-2025 09:06:06 UTC] [Simple Connect] Received callback from Svelta with api_key and callback_url.
+[28-Nov-2025 09:06:06 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_pending-pickup).
+[28-Nov-2025 09:06:06 UTC] [Simple Connect] Webhook created/updated successfully after connect.
+[28-Nov-2025 09:06:06 UTC] [Simple Connect] WC_REST_API_Keys_Controller file not found at: C:\laragon\www\wordpress\wp-content\plugins\woocommerce/includes/rest-api/Controllers/Version3/class-wc-rest-api-keys-controller.php
+[28-Nov-2025 09:06:06 UTC] [Simple Connect] Could not load WC_REST_API_Keys_Controller or WP_REST_Request, REST key not created.
+[28-Nov-2025 09:06:06 UTC] [Simple Connect] Unable to send plugin credentials to Svelta because Woo REST key could not be created.
+[28-Nov-2025 09:13:10 UTC] [Simple Connect] Disconnected from Svelta (config cleared, webhook disabled).
+[28-Nov-2025 09:13:30 UTC] [Simple Connect] Received callback from Svelta with api_key and callback_url.
+[28-Nov-2025 09:13:30 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_pending-pickup).
+[28-Nov-2025 09:13:30 UTC] [Simple Connect] Webhook created/updated successfully after connect.
+[28-Nov-2025 09:13:30 UTC] [Simple Connect] Created Woo REST key via direct DB insert (ID 22).
+[28-Nov-2025 09:13:31 UTC] [Simple Connect] Successfully sent plugin credentials to Svelta (ReceivePluginCredentials, HTTP 200).
+[28-Nov-2025 09:13:59 UTC] [Simple Connect] Disconnected from Svelta (config cleared, webhook disabled).
+[28-Nov-2025 09:14:12 UTC] PHP Warning:  Trying to access array offset on false in C:\laragon\www\wordpress\wp-content\plugins\jetpack\jetpack_vendor\automattic\jetpack-connection\src\class-manager.php on line 2112
+[28-Nov-2025 09:14:12 UTC] PHP Deprecated:  urlencode(): Passing null to parameter #1 ($string) of type string is deprecated in C:\laragon\www\wordpress\wp-includes\formatting.php on line 5144
+[28-Nov-2025 09:14:15 UTC] [Simple Connect] Received callback from Svelta with api_key and callback_url.
+[28-Nov-2025 09:14:15 UTC] [Simple Connect] Svelta webhook saved (ID 46, topic action.woocommerce_order_status_pending-pickup).
+[28-Nov-2025 09:14:15 UTC] [Simple Connect] Webhook created/updated successfully after connect.
+[28-Nov-2025 09:14:15 UTC] [Simple Connect] Using existing Woo REST key (ID 22).
+[28-Nov-2025 09:14:15 UTC] [Simple Connect] Successfully sent plugin credentials to Svelta (ReceivePluginCredentials, HTTP 200).
