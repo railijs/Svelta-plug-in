@@ -8,7 +8,7 @@ if (! defined('ABSPATH')) {
  *
  * This version:
  *  - Checks the WooCommerce API keys table to see if the stored key still exists.
- *  - If it was revoked, it creates a brand-new key directly in the DB.
+ *  - If it was revoked, it creates a brand-new key directly in the DataBase.
  *  - Does NOT rely on WC_REST_API_Keys_Controller at all.
  */
 
